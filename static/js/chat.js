@@ -20,7 +20,7 @@ class ChatManager {
         // Auto-resize textarea
         this.messageInput.addEventListener('input', () => {
             this.messageInput.style.height = 'auto';
-            this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 120) + 'px';
+            this.messageInput.style.height = Math.min(this.messageInput.scrollHeight, 200) + 'px';
         });
     }
 
@@ -28,10 +28,14 @@ class ChatManager {
         const message = this.messageInput.value.trim();
         if (!message) return;
 
+        // Hide welcome screen
+        this.hideWelcomeScreen();
+
         // Add user message
         this.addMessage(message, 'user');
         this.messageInput.value = '';
         this.messageInput.style.height = 'auto';
+        this.sendButton.disabled = true;
 
         // Show loading
         this.showLoading();
@@ -48,36 +52,64 @@ class ChatManager {
             const data = await response.json();
             this.hideLoading();
             this.addMessage(data.message, 'assistant');
+            this.sendButton.disabled = false;
         } catch (error) {
             this.hideLoading();
             this.addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+            this.sendButton.disabled = false;
+        }
+    }
+
+    hideWelcomeScreen() {
+        const welcome = this.chatMessages.querySelector('.text-center');
+        if (welcome) {
+            welcome.remove();
         }
     }
 
     addMessage(text, sender) {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender} fade-in`;
-        messageDiv.innerHTML = `
-            <div class="text-sm">${this.formatMessage(text)}</div>
-        `;
+        messageDiv.className = `message ${sender} message-enter`;
+        
+        if (sender === 'user') {
+            messageDiv.innerHTML = `
+                <div class="flex justify-end">
+                    <div class="bg-blue-600 text-white rounded-2xl px-4 py-2 max-w-md">
+                        <p class="text-sm">${this.formatMessage(text)}</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="flex">
+                    <div class="bg-gray-100 rounded-2xl px-4 py-2 max-w-md">
+                        <p class="text-sm">${this.formatMessage(text)}</p>
+                    </div>
+                </div>
+            `;
+        }
 
         this.chatMessages.appendChild(messageDiv);
         this.scrollToBottom();
     }
 
     formatMessage(text) {
-        // Basic formatting for code blocks and paragraphs
         return text.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
     }
 
     showLoading() {
         const loadingDiv = document.createElement('div');
-        loadingDiv.className = 'message assistant fade-in';
+        loadingDiv.className = 'message assistant message-enter';
         loadingDiv.id = 'loading-message';
         loadingDiv.innerHTML = `
-            <div class="flex items-center space-x-2">
-                <div class="loading"></div>
-                <span class="text-sm text-gray-500">Thinking...</span>
+            <div class="flex">
+                <div class="bg-gray-100 rounded-2xl px-4 py-2">
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
             </div>
         `;
         this.chatMessages.appendChild(loadingDiv);
